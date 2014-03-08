@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openerp>
+    <data>
+        <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			Partner data -->
+        <!-- This record creates a new Page on the Partner model, adding everything
+			relevant to EDI -->
+        <record id="view_partner_form_edi" model="ir.ui.view">
+            <field name="name">view.partner.form.edi</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form"/>
+            <field name="arch" type="xml">
+                <page position="after" string="Sales &amp; Purchases">
+                    <page name="edi_extension" string="EDI">
+                        <group>
+                            <field name="edi_relevant"/>
+                            <field name="edi_flows"/>
+                        </group>
+                    </page>
+                </page>
+            </field>
+        </record>
+        <!-- This record creates the tree view for the partner to select which
+			EDI Flows he wants to subscribe to -->
+        <record id="view_partner_form_edi_flow_tree" model="ir.ui.view">
+            <field name="name">view.partner.form.edi.flow.tree</field>
+            <field name="model">clubit.tools.edi.partnerflow</field>
+            <field name="arch" type="xml">
+                <tree editable="bottom" string="EDI Flow Selection">
+                    <field name="flow_id"/>
+                    <field name="partnerflow_active"/>
+                </tree>
+            </field>
+        </record>
+        <!-- This record creates the form view to provide detailed input when the
+			partner is selecting a single EDI Flow. -->
+        <record id="view_partner_form_edi_flow_form" model="ir.ui.view">
+            <field name="name">view.partner.form.edi.flow.form</field>
+            <field name="model">clubit.tools.edi.partnerflow</field>
+            <field name="arch" type="xml">
+                <form string="EDI Flow Selection" version="7.0">
+                    <group>
+                        <field name="flow_id"/>
+                        <field name="partnerflow_active"/>
+                    </group>
+                </form>
+            </field>
+        </record>
+        <!-- Next up are all the views related to the EDI documents. The way this
+			is set up is as following. The menu item links to the action, the action
+			links to a search_view, which is the dropdown when you expand the search
+			box in the top right. The view itself is shown through the default tree view. -->
+        <!-- EDI Document Tree Views-->
+        <record id="view_clubit_tools_edi_document_incoming_tree" model="ir.ui.view">
+            <field name="name">view.clubit.tools.edi.document.incoming.tree</field>
+            <field name="model">clubit.tools.edi.document.incoming</field>
+            <field name="priority">1</field>
+            <field name="arch" type="xml">
+                <tree
+                    colors="grey:state=='archived';green:state=='processed';blue:state in ('processing','edited');red:state=='in_error'"
+                    create="false" delete="false" string="Incoming Documents">
+                    <field name="partner_id"/>
+                    <field name="flow_id"/>
+                    <field name="name"/>
+                    <field name="reference"/>
+                    <field name="create_date"/>
+                    <field name="state"/>
+                    <field name="message"/>
+                </tree>
+            </field>
+        </record>
+        <record id="view_clubit_tools_edi_document_outgoing_tree" model="ir.ui.view">
+            <field name="name">view.clubit.tools.edi.document.outgoing.tree</field>
+            <field name="model">clubit.tools.edi.document.outgoing</field>
+            <field name="priority">1</field>
+            <field name="arch" type="xml">
+                <tree create="false" delete="false" string="Outgoing Documents">
+                    <field name="partner_id"/>
+                    <field name="flow_id"/>
+                    <field name="reference"/>
+                    <field name="create_date"/>
+                    <field name="name"/>
+                    <field name="message"/>
+                </tree>
+            </field>
+        </record>
+        <record id="view_clubit_tools_edi_document_incoming_filter" model="ir.ui.view">
+            <field name="name">view.clubit.tools.edi.document.incoming.filter</field>
+            <field name="model">clubit.tools.edi.document.incoming</field>
+            <field name="arch" type="xml">
+                <search string="Search EDI Documents">
+                    <field filter_domain="[('name','ilike',self)]"
+                        name="name" string="Document Name"/>
+                    <separator/>
+                    <filter domain="[('state','=','new')]"
+                        name="edi_filter_state_new" string="New"/>
+                    <filter domain="[('state','=','ready')]"
+                        name="edi_filter_state_ready" string="Ready"/>
+                    <filter domain="[('state','=','processing')]"
+                        name="edi_filter_state_processing" string="Processing"/>
+                    <filter domain="[('state','=','processed')]"
+                        name="edi_filter_state_processed" string="Processed"/>
+                    <filter domain="[('state','=','in_error')]"
+                        name="edi_filter_state_in_error" string="In Error"/>
+                    <filter domain="[('state','=','edited')]"
+                        name="edi_filter_state_edited" string="Edited"/>
+                    <filter domain="[('state','=','archived')]"
+                        name="edi_filter_state_archived" string="Archived"/>
+                    <filter domain="[('state','!=','archived')]"
+                        name="edi_filter_state_not_archived" string="Not Archived"/>
+                    <separator/>
+                    <group expand="0" string="Group By...">
+                        <filter context="{'group_by':'partner_id'}"
+                            domain="[]" name="edi_group_by_partner" string="Partner"/>
+                        <filter context="{'group_by':'state'}"
+                            domain="[]" name="edi_group_by_state" string="Status"/>
+                        <filter context="{'group_by':'flow_id'}"
+                            domain="[]" name="edi_group_by_flow" string="EDI Flow"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+        <record id="view_clubit_tools_edi_document_outgoing_filter" model="ir.ui.view">
+            <field name="name">view.clubit.tools.edi.document.outgoing_filter</field>
+            <field name="model">clubit.tools.edi.document.outgoing</field>
+            <field name="arch" type="xml">
+                <search string="Search EDI Documents">
+                    <field filter_domain="[('name','ilike',self)]"
+                        name="name" string="Document Name"/>
+                    <separator/>
+                    <group expand="0" string="Group By...">
+                        <filter context="{'group_by':'partner_id'}"
+                            domain="[]" name="edi_group_by_partner" string="Partner"/>
+                        <filter context="{'group_by':'flow_id'}"
+                            domain="[]" name="edi_group_by_flow" string="EDI Flow"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+        <!-- Menu item actions-->
+        <record id="action_edi_documents_incoming" model="ir.actions.act_window">
+            <field name="name">Incoming Documents</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">clubit.tools.edi.document.incoming</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">tree,form</field>
+            <field name="search_view_id" ref="view_clubit_tools_edi_document_incoming_filter"/>
+            <field name="context">{'search_default_edi_filter_state_not_archived':True, 'search_default_edi_group_by_state':True, 'search_default_edi_group_by_flow':True}</field>
+            <field name="domain">[]</field>
+        </record>
+        <record id="action_edi_documents_outgoing" model="ir.actions.act_window">
+            <field name="name">Outgoing Documents</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">clubit.tools.edi.document.outgoing</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">tree,form</field>
+            <field name="search_view_id" ref="view_clubit_tools_edi_document_outgoing_filter"/>
+            <field name="context">{}</field>
+            <field name="domain">[]</field>
+        </record>
+        <record id="action_edi_schedulers" model="ir.actions.act_window">
+            <field name="name">EDI Schedulers</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">ir.cron</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">tree,form</field>
+            <field name="context">{}</field>
+            <field name="domain">[('name','like','EDI')]</field>
+        </record>
+        <!-- Top menu item-->
+        <menuitem groups="clubit_tools_edi_user" id="menu_clubit_tools"
+            name="EDI" sequence="9"/>
+        <!-- EDI Documents-->
+        <menuitem groups="clubit_tools_edi_user"
+            id="menu_clubit_tools_edi" name="EDI" parent="menu_clubit_tools"/>
+        <menuitem action="action_edi_documents_incoming"
+            groups="clubit_tools_edi_user"
+            id="menu_clubit_tools_edi_document_incoming" parent="menu_clubit_tools_edi"/>
+        <menuitem action="action_edi_documents_outgoing"
+            groups="clubit_tools_edi_user"
+            id="menu_clubit_tools_edi_document_outgoing" parent="menu_clubit_tools_edi"/>
+        <!-- EDI Config-->
+        <menuitem groups="clubit_tools_edi_user"
+            id="menu_clubit_tools_config" name="Config" parent="menu_clubit_tools"/>
+        <menuitem action="action_edi_schedulers"
+            groups="clubit_tools_edi_user"
+            id="menu_clubit_tools_edi_schedulers" parent="menu_clubit_tools_config"/>
+        <menuitem action="base.action_partner_form"
+            id="menu_clubit_tools_customers" name="Customers" parent="menu_clubit_tools_config"/>
+        <menuitem action="base.action_partner_supplier_form"
+            id="menu_clubit_tools_suppliers" name="Suppliers" parent="menu_clubit_tools_config"/>
+        <!-- EDI Document Form Views-->
+        <record id="view_clubit_tools_edi_document_incoming_form" model="ir.ui.view">
+            <field name="name">view.clubit.tools.edi.document.incoming.form</field>
+            <field name="model">clubit.tools.edi.document.incoming</field>
+            <field name="arch" type="xml">
+                <form create="false" duplicate="false"
+                    string="Incoming Document" version="7.0">
+                    <header>
+                        <button name="button_to_ready"
+                            states="new,in_error" string="Ready"/>
+                        <button name="button_to_archived"
+                            states="processed" string="Archive"/>
+                        <field name="state"
+                            statusbar_visible="new,in_error,ready,processed,archived" widget="statusbar"/>
+                    </header>
+                    <sheet>
+                        <h1>
+                            <field class="oe_inline" name="name" readonly="1"/>
+                        </h1>
+                        <group>
+                            <group>
+                                <field name="partner_id" readonly="1"/>
+                                <field name="flow_id" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="location" readonly="1"/>
+                                <field name="message" readonly="1"/>
+                            </group>
+                        </group>
+                        <field name="content"/>
+                    </sheet>
+                    <div class="oe_chatter">
+                        <field groups="base.group_user"
+                            name="message_follower_ids" widget="mail_followers"/>
+                        <field name="message_ids" widget="mail_thread"/>
+                    </div>
+                </form>
+            </field>
+        </record>
+        <record id="view_clubit_tools_edi_document_outgoing_form" model="ir.ui.view">
+            <field name="name">view.clubit.tools.edi.document.outgoing.form</field>
+            <field name="model">clubit.tools.edi.document.outgoing</field>
+            <field name="arch" type="xml">
+                <form create="false" duplicate="false" edit="false"
+                    string="Outgoing Document" version="7.0">
+                    <sheet>
+                        <h1>
+                            <field class="oe_inline" name="name" readonly="1"/>
+                        </h1>
+                        <group>
+                            <group>
+                                <field name="partner_id" readonly="1"/>
+                                <field name="flow_id" readonly="1"/>
+                                <field name="reference" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="location" readonly="1"/>
+                                <field name="message" readonly="1"/>
+                                <field name="state" readonly="1"/>
+                            </group>
+                        </group>
+                        <field name="content"/>
+                    </sheet>
+                    <div class="oe_chatter">
+                        <field groups="base.group_user"
+                            name="message_follower_ids" widget="mail_followers"/>
+                        <field name="message_ids" widget="mail_thread"/>
+                    </div>
+                </form>
+            </field>
+        </record>
+    </data>
+</openerp>

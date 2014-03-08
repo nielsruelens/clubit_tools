@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<openerp>
+	<data>
+            <record model="res.groups" id="clubit_tools_edi_user">
+                <field name="name">EDI User</field>
+            </record>
+
+            <record model="ir.model.access" id="clubit_tools_edi_access_partnerflow">
+                <field name="model_id" ref="clubit_tools.model_clubit_tools_edi_partnerflow" />
+                <field name="name">clubit.tools.edi.user.partnerflow</field>
+                <field name="group_id" ref="clubit_tools_edi_user" />
+                <field name="perm_read" eval="1" />
+                <field name="perm_write" eval="1" />
+                <field name="perm_unlink" eval="1" />
+                <field name="perm_create" eval="1" />
+            </record>
+
+            <record model="ir.model.access" id="clubit_tools_edi_access_document">
+                <field name="model_id" ref="clubit_tools.model_clubit_tools_edi_document" />
+                <field name="name">clubit.tools.edi.user.document</field>
+                <field name="group_id" ref="clubit_tools_edi_user" />
+                <field name="perm_read" eval="1" />
+                <field name="perm_write" eval="1" />
+                <field name="perm_unlink" eval="1" />
+                <field name="perm_create" eval="1" />
+            </record>
+
+            <record model="ir.model.access" id="clubit_tools_edi_access_document_incoming">
+                <field name="model_id" ref="clubit_tools.model_clubit_tools_edi_document_incoming" />
+                <field name="name">clubit.tools.edi.user.document.incoming</field>
+                <field name="group_id" ref="clubit_tools_edi_user" />
+                <field name="perm_read" eval="1" />
+                <field name="perm_write" eval="1" />
+                <field name="perm_unlink" eval="1" />
+                <field name="perm_create" eval="1" />
+            </record>
+
+            <record model="ir.model.access" id="clubit_tools_edi_access_document_outgoing">
+                <field name="model_id" ref="clubit_tools.model_clubit_tools_edi_document_outgoing" />
+                <field name="name">clubit.tools.edi.user.document.outgoing</field>
+                <field name="group_id" ref="clubit_tools_edi_user" />
+                <field name="perm_read" eval="1" />
+                <field name="perm_write" eval="1" />
+                <field name="perm_unlink" eval="1" />
+                <field name="perm_create" eval="1" />
+            </record>
+	</data>
+</openerp>

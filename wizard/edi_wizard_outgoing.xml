@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openerp>
+    <data>
+        <!-- Archiving wizard -->
+        <record id="clubit_tools_wizard_edi_outgoing_form" model="ir.ui.view">
+            <field name="name">EDI Export</field>
+            <field name="model">clubit.tools.edi.wizard.outgoing</field>
+            <field name="arch" type="xml">
+                <form string="Send EDI" version="7.0">
+                    <p class="oe_grey">
+						Really send all of these documents? <br/>
+						You can choose to send them to a specific partner of your choosing (as long as this partner is EDI
+						relevant) and is listening to this EDI Flow. If you don't enter a specific partner you can let the system determine who to send the
+						documents to automatically.
+					</p>
+					<group>
+                      <field name="partner_id" domain="[('edi_relevant','=','True')]"/>
+                    </group>
+                    <footer>
+                        <button class="oe_highlight" name="resolve"
+                            string="Resolve" type="object"/>
+                        <button class="oe_highlight" name="select"
+                            string="Only To Selected"
+                            type="object"/>
+						or
+						<button
+                            class="oe_link" special="cancel" string="Cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+    </data>
+</openerp>
