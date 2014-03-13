@@ -3,7 +3,7 @@ from openerp.tools.translate import _
 from os import listdir, path, makedirs
 from os.path import isfile, join, split
 from shutil import move
-import re, netsvc, json
+import re, netsvc, json, csv, StringIO
 import datetime
 from pytz import timezone
 from openerp import SUPERUSER_ID
@@ -207,6 +207,24 @@ class res_partner(osv.Model):
         f.close()
 
 
+    def listen_to_edi_flow(self, cr, uid, partner_id, flow_id):
+        ''' res.partner:listen_to_edi_flow()
+        ------------------------------------
+        This method adds an EDI flow to a partner.
+        ------------------------------------------ '''
+        if not partner_id or not flow_id: return False
+
+        partner = self.browse(cr, uid, partner_id)
+        exists = [flow for flow in partner.edi_flows if flow.flow_id.id == flow_id]
+        if exists:
+            vals = {'edi_flows': [[1, exists[0].id, {'partnerflow_active': True, 'flow_id': flow_id}]]}
+            return self.write(cr, uid, [partner_id], vals)
+        else:
+            vals = {'edi_flows': [[0, False, {'partnerflow_active': True, 'flow_id': flow_id}]]}
+            return self.write(cr, uid, [partner_id], vals)
+
+
+
 
 
 ##############################################################################
@@ -353,7 +371,39 @@ class clubit_tools_edi_document(osv.Model):
         return True
 
 
+    def position_document(self, cr, uid, partner_id, flow_id, content, content_type='json'):
+        ''' clubit.tools.edi.document:position_document()
+        -------------------------------------------------
+        This method will position the given content as an EDI
+        document ready to be picked up for a given partner/flow
+        combination. It will make sure the partner is actually
+        listening to this flow.
+        ------------------------------------------------------- '''
 
+        # Make the partner listen
+        # -----------------------
+        partner_db = self.pool.get('res.partner')
+        partner_db.listen_to_edi_flow(cr, uid, partner_id, flow_id)
+
+        # Create a file from the given content
+        # ------------------------------------
+        now = datetime.datetime.now()
+        name = now.strftime("%d_%m_%Y_%H_%M_%S") + ".csv"
+
+        path = join(_directory_edi_base, cr.dbname, str(partner_id), str(flow_id), name)
+        with open(path, 'wb') as temp_file:
+
+            if content_type == 'csv':
+                writer = csv.writer(temp_file, delimiter=',', quotechar='"')
+                for line in content:
+                    writer.writerow(line)
+
+            elif content_type == 'json':
+                for line in content:
+                    temp_file.write(line)
+
+
+        return True
 
 
 
@@ -542,16 +592,27 @@ class clubit_tools_edi_document_incoming(osv.Model):
         document = self.browse(cr, uid, ids[0], None)
 
 
-        # Perform a basic JSON validation
-        # -------------------------------
-        try:
-            data = json.loads(document.content)
-            if not data:
+        # Perform a basic validation, depending on the filetype
+        # -----------------------------------------------------
+        filetype = document.name.split('.')[-1]
+        if filetype == 'csv':
+            try:
+                dummy_file = StringIO.StringIO(document.content)
+                reader = csv.reader(dummy_file, delimiter=',', quotechar='"')
+            except Exception:
+                self.message_post(cr, uid, document.id, body='Error found: content is not valid CSV.')
+                return False
+
+
+        elif filetype == 'json':
+            try:
+                data = json.loads(document.content)
+                if not data:
+                    self.message_post(cr, uid, document.id, body='Error found: content is not valid JSON.')
+                    return False
+            except Exception:
                 self.message_post(cr, uid, document.id, body='Error found: content is not valid JSON.')
                 return False
-        except Exception:
-            self.message_post(cr, uid, document.id, body='Error found: content is not valid JSON.')
-            return False
 
 
         # Perform custom validation
