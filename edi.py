@@ -3,7 +3,7 @@ from openerp.tools.translate import _
 from os import listdir, path, makedirs
 from os.path import isfile, join, split
 from shutil import move
-import re, netsvc, json, csv
+import re, netsvc, json, csv, StringIO
 import datetime
 from pytz import timezone
 from openerp import SUPERUSER_ID
@@ -592,16 +592,27 @@ class clubit_tools_edi_document_incoming(osv.Model):
         document = self.browse(cr, uid, ids[0], None)
 
 
-        # Perform a basic JSON validation
-        # -------------------------------
-        try:
-            data = json.loads(document.content)
-            if not data:
+        # Perform a basic validation, depending on the filetype
+        # -----------------------------------------------------
+        filetype = document.name.split('.')[-1]
+        if filetype == 'csv':
+            try:
+                dummy_file = StringIO.StringIO(document.content)
+                reader = csv.reader(dummy_file, delimiter=',', quotechar='"')
+            except Exception:
+                self.message_post(cr, uid, document.id, body='Error found: content is not valid CSV.')
+                return False
+
+
+        elif filetype == 'json':
+            try:
+                data = json.loads(document.content)
+                if not data:
+                    self.message_post(cr, uid, document.id, body='Error found: content is not valid JSON.')
+                    return False
+            except Exception:
                 self.message_post(cr, uid, document.id, body='Error found: content is not valid JSON.')
                 return False
-        except Exception:
-            self.message_post(cr, uid, document.id, body='Error found: content is not valid JSON.')
-            return False
 
 
         # Perform custom validation
