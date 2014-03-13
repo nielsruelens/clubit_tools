@@ -207,6 +207,24 @@ class res_partner(osv.Model):
         f.close()
 
 
+    def listen_to_edi_flow(self, cr, uid, partner_id, flow_id):
+        ''' res.partner:listen_to_edi_flow()
+        ------------------------------------
+        This method adds an EDI flow to a partner.
+        ------------------------------------------ '''
+        if not partner_id or not flow_id: return False
+
+        partner = self.browse(cr, uid, partner_id)
+        exists = [flow for flow in partner.edi_flows if flow.flow_id.id == flow_id]
+        if exists:
+            vals = {'edi_flows': [[1, exists[0].id, {'partnerflow_active': True, 'flow_id': flow_id}]]}
+            return self.write(cr, uid, [partner_id], vals)
+        else:
+            vals = {'edi_flows': [[0, False, {'partnerflow_active': True, 'flow_id': flow_id}]]}
+            return self.write(cr, uid, [partner_id], vals)
+
+
+
 
 
 ##############################################################################
