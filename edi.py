@@ -3,7 +3,7 @@ from openerp.tools.translate import _
 from os import listdir, path, makedirs
 from os.path import isfile, join, split
 from shutil import move
-import re, netsvc, json
+import re, netsvc, json, csv
 import datetime
 from pytz import timezone
 from openerp import SUPERUSER_ID
@@ -371,7 +371,39 @@ class clubit_tools_edi_document(osv.Model):
         return True
 
 
+    def position_document(self, cr, uid, partner_id, flow_id, content, content_type='json'):
+        ''' clubit.tools.edi.document:position_document()
+        -------------------------------------------------
+        This method will position the given content as an EDI
+        document ready to be picked up for a given partner/flow
+        combination. It will make sure the partner is actually
+        listening to this flow.
+        ------------------------------------------------------- '''
 
+        # Make the partner listen
+        # -----------------------
+        partner_db = self.pool.get('res.partner')
+        partner_db.listen_to_edi_flow(cr, uid, partner_id, flow_id)
+
+        # Create a file from the given content
+        # ------------------------------------
+        now = datetime.datetime.now()
+        name = now.strftime("%d_%m_%Y_%H_%M_%S") + ".csv"
+
+        path = join(_directory_edi_base, cr.dbname, str(partner_id), str(flow_id), name)
+        with open(path, 'wb') as temp_file:
+
+            if content_type == 'csv':
+                writer = csv.writer(temp_file, delimiter=',', quotechar='"')
+                for line in content:
+                    writer.writerow(line)
+
+            elif content_type == 'json':
+                for line in content:
+                    temp_file.write(line)
+
+
+        return True
 
 
 
