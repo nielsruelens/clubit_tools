@@ -169,7 +169,7 @@
         </record>
         <!-- Top menu item-->
         <menuitem groups="clubit_tools_edi_user" id="menu_clubit_tools"
-            name="EDI" sequence="9"/>
+            name="EDI" sequence="999999"/>
         <!-- EDI Documents-->
         <menuitem groups="clubit_tools_edi_user"
             id="menu_clubit_tools_edi" name="EDI" parent="menu_clubit_tools"/>
