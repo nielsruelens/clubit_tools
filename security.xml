@@ -15,6 +15,13 @@
                 <field name="perm_create" eval="1" />
             </record>
 
+            <record model="ir.model.access" id="clubit_tools_edi_access_flow">
+                <field name="model_id" ref="clubit_tools.model_clubit_tools_edi_flow" />
+                <field name="name">clubit.tools.edi.user.flow</field>
+                <field name="group_id" ref="clubit_tools_edi_user" />
+                <field name="perm_read" eval="1" />
+            </record>
+
             <record model="ir.model.access" id="clubit_tools_edi_access_document">
                 <field name="model_id" ref="clubit_tools.model_clubit_tools_edi_document" />
                 <field name="name">clubit.tools.edi.user.document</field>
