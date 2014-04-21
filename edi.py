@@ -224,6 +224,21 @@ class res_partner(osv.Model):
             return self.write(cr, uid, [partner_id], vals)
 
 
+    def is_listening_to_flow(self, cr, uid, partner_id, flow_id):
+        ''' res.partner:is_listening_to_flow()
+        --------------------------------------
+        This method checks wether or not a partner
+        is listening to a given flow.
+        ------------------------------------------ '''
+        if not partner_id or not flow_id: return False
+
+        partner = self.browse(cr, uid, partner_id)
+        if not partner.edi_relevant: return False
+        exists = next(flow for flow in partner.edi_flows if flow.flow_id.id == flow_id)
+        if exists and exists.partnerflow_active:
+            return True
+        return False
+
 
 
 
