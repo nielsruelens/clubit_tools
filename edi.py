@@ -803,7 +803,7 @@ class clubit_tools_edi_document_outgoing(osv.Model):
             try:
                 data = json.loads(json.dumps(content))
                 if not data: return self._content_invalid
-            except Exception as e:
+            except Exception:
                 return self._content_invalid
 
 
@@ -846,8 +846,8 @@ class clubit_tools_edi_document_outgoing(osv.Model):
             f = open(join(vals['location'], vals['name']), "w")
             f.write(vals['content'])
             f.close()
-        except Exception:
-            return self._file_creation_error
+        except Exception as e:
+            return str(e)
 
         return True
 
