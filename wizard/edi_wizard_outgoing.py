@@ -39,8 +39,8 @@ class clubit_tools_edi_wizard_outgoing(osv.TransientModel):
         resolver = getattr(self.pool.get(flow.model), flow.partner_resolver)
         try:
             resolved_list = resolver(cr, uid, ids, context)
-        except Exception:
-            raise osv.except_osv(_('Warning!'), _("Partner_resolver raised an exception. Contact your system administrator."))
+        except Exception as e:
+            raise e
 
         self.check_partner_allowed(cr, uid, flow_id, resolved_list, context)
 

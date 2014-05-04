@@ -7,7 +7,10 @@ import re, netsvc, json, csv, StringIO
 import datetime
 from pytz import timezone
 from openerp import SUPERUSER_ID
-
+try:
+    import xml.etree.cElementTree as ET
+except ImportError:
+    import xml.etree.ElementTree as ET
 
 ##############################################################################
 #
@@ -782,7 +785,7 @@ class clubit_tools_edi_document_outgoing(osv.Model):
         This method accepts content and creates an EDI document
         for each currently actively listening partner.
         ------------------------------------------------------- '''
-    def create_from_content(self, cr, uid, reference, content, partner_id, model, method):
+    def create_from_content(self, cr, uid, reference, content, partner_id, model, method, type='JSON'):
 
 
         # Resolve the method to an EDI flow
@@ -794,13 +797,14 @@ class clubit_tools_edi_document_outgoing(osv.Model):
         flow = flow_db.browse(cr, uid, flow, None)
 
 
-        # Make sure the provided content is valid JSON
-        # --------------------------------------------
-        try:
-            data = json.loads(json.dumps(content))
-            if not data: return self._content_invalid
-        except Exception as e:
-            return self._content_invalid
+        # Make sure the provided content is valid
+        # ---------------------------------------
+        if type == 'JSON':
+            try:
+                data = json.loads(json.dumps(content))
+                if not data: return self._content_invalid
+            except Exception as e:
+                return self._content_invalid
 
 
         # Start preparing the document
@@ -815,9 +819,18 @@ class clubit_tools_edi_document_outgoing(osv.Model):
         else:
             tz = timezone('UTC')
         now = datetime.datetime.now(tz)
-        vals['name'] = reference.replace("/", "_") + '_' + now.strftime("%d_%m_%Y_%H_%M_%S") + ".json"
         vals['flow_id'] = flow.id
-        vals['content'] = json.dumps(content)
+
+        if type == 'STRING':
+            vals['name'] = reference.replace("/", "_") + '_' + now.strftime("%d_%m_%Y_%H_%M_%S") + ".json"
+            vals['content'] = content
+        elif type == 'XML':
+            vals['name'] = reference.replace("/", "_") + '_' + now.strftime("%d_%m_%Y_%H_%M_%S") + ".xml"
+            vals['content'] = ET.tostring(content, encoding='UTF-8', method='xml')
+        else:
+            vals['name'] = reference.replace("/", "_") + '_' + now.strftime("%d_%m_%Y_%H_%M_%S") + ".json"
+            vals['content'] = json.dumps(content)
+
         vals['reference'] = reference
         vals['partner_id'] = partner_id
         vals['location']   = join(_directory_edi_base, cr.dbname, str(partner_id), str(flow.id))
@@ -831,7 +844,7 @@ class clubit_tools_edi_document_outgoing(osv.Model):
         # --------------------------
         try:
             f = open(join(vals['location'], vals['name']), "w")
-            f.write(json.dumps(content))
+            f.write(vals['content'])
             f.close()
         except Exception:
             return self._file_creation_error
