@@ -727,8 +727,8 @@ class clubit_tools_edi_document_incoming(osv.Model):
         result = False
         try:
             result = processor(cr, uid, document.id, None)
-        except Exception:
-            self.message_post(cr, uid, document.id, body='Error occurred during processing, likely due to a program error.')
+        except Exception as e:
+            self.message_post(cr, uid, document.id, body='Error occurred during processing, error given: {!s}'.format(str(e)))
             self.write(cr, uid, ids, { 'state' : 'processed' })
         if result:
             self.message_post(cr, uid, document.id, body='EDI Document successfully processed.')
