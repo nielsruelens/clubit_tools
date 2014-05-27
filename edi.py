@@ -61,6 +61,7 @@ class clubit_tools_edi_flow(osv.Model):
         'method': fields.char('Method Name', size=64, required=False, readonly=True),
         'validator': fields.char('Validator Name', size=64, required=False, readonly=True),
         'partner_resolver': fields.char('Partner Resolver Name', size=64, required=False, readonly=True),
+        'process_after_create' : fields.boolean('Automatically process after create'),
     }
 
 
@@ -108,24 +109,24 @@ class res_partner(osv.Model):
     }
 
 
-    ''' res.partner:create()
-        --------------------------------------------
+    def create(self, cr, uid, vals, context=None):
+        ''' res.partner:create()
+        ------------------------
         This method overwrites the standard OpenERP create() method to make
         sure all required EDI directories are created.
-        -------------------------------------------------------------------- '''
-    def create(self, cr, uid, vals, context=None):
+        ------------------------------------------------------------------- '''
         new_id = super(res_partner, self).create(cr, uid, vals, context=context)
         self.maintain_edi_directories(cr, uid, [new_id], context)
         self.update_partner_overview_file(cr, uid, context)
         return new_id
 
 
-    ''' res.partner:write()
-        --------------------------------------------
+    def write(self, cr, uid, ids, vals, context=None):
+        ''' res.partner:write()
+        -----------------------
         This method overwrites the standard OpenERP write() method to make
         sure all required EDI directories are created.
-        -------------------------------------------------------------------- '''
-    def write(self, cr, uid, ids, vals, context=None):
+        ------------------------------------------------------------------ '''
         result = super(res_partner, self).write(cr, uid, ids, vals, context=context)
         self.maintain_edi_directories(cr, uid, ids, context)
         self.update_partner_overview_file(cr, uid, context)
@@ -135,13 +136,13 @@ class res_partner(osv.Model):
 
 
 
-    ''' res.partner:maintain_edi_directories()
-        --------------------------------------------
+    def maintain_edi_directories(self, cr, uid, ids, context=None):
+        ''' res.partner:maintain_edi_directories()
+        ------------------------------------------
         This method creates all EDI directories for a given set of partners.
         A root folder based on the partner_id is created, with a et of sub
         folders for all the EDI flows he is subscried to.
         -------------------------------------------------------------------- '''
-    def maintain_edi_directories(self, cr, uid, ids, context=None):
 
 
         # Only process partners that are EDI relevant
@@ -176,13 +177,13 @@ class res_partner(osv.Model):
 
 
 
-    ''' res.partner:update_partner_overview_file()
-        ------------------------------------------
+    def update_partner_overview_file(self, cr, uid, context):
+        ''' res.partner:update_partner_overview_file()
+        ----------------------------------------------
         This method creates a file for eachin the root EDI directory to give a matching
         list of partner_id's with their current corresponding names for easier
         lookups.
-        ----------------------------------------------------------------------- '''
-    def update_partner_overview_file(self, cr, uid, context):
+        ------------------------------------------------------------------------------- '''
 
         # Find all active EDI partners
         # ----------------------------
@@ -263,12 +264,12 @@ class clubit_tools_edi_document(osv.Model):
     _error_file_move_failed                   = 'file_move_failed'
 
 
-    ''' clubit.tools.edi.document:_function_message_get()
-        --------------------------------------------
+    def _function_message_get(self, cr, uid, ids, field, arg, context=None):
+        ''' clubit.tools.edi.document:_function_message_get()
+        -----------------------------------------------------
         This method helps to dynamically calculate the
         message field to always show the latest OpenChatter message body.
         ----------------------------------------------------------------- '''
-    def _function_message_get(self, cr, uid, ids, field, arg, context=None):
         res = dict.fromkeys(ids, False)
         for document in self.browse(cr, uid, ids, context=context):
             res[document.id] = re.sub('<[^<]+?>', '',document.message_ids[0].body)
@@ -293,13 +294,13 @@ class clubit_tools_edi_document(osv.Model):
     }
 
 
-    ''' clubit.tools.edi.document:unlink()
-        --------------------------------------------
+    def unlink(self, cr, uid, ids, context=None):
+        ''' clubit.tools.edi.document:unlink()
+        --------------------------------------
         This method overwrites the default unlink/delete() method
         to make sure a document can only be deleted when it's
         in state "in_error"
         --------------------------------------------------------- '''
-    def unlink(self, cr, uid, ids, context=None):
         assert len(ids) == 1
         document = self.browse(cr, uid, ids, context=context)[0]
         if document.state != 'in_error':
@@ -308,24 +309,24 @@ class clubit_tools_edi_document(osv.Model):
 
 
 
-    ''' clubit.tools.edi.document:check_location()
-        ------------------------------------------
+    def check_location(self, cr, uid, doc_id, context):
+        ''' clubit.tools.edi.document:check_location()
+        ----------------------------------------------
         This method checks wether or not the documents corresponding
         file is still where it's supposed to be.
         ------------------------------------------------------------ '''
-    def check_location(self, cr, uid, doc_id, context):
 
         document = self.browse(cr, uid, doc_id, context=context)
         return isfile(join(document.location, document.name))
 
 
 
-    ''' clubit.tools.edi.document:move()
-        --------------------------------
+    def move(self, cr, uid, doc_id, to_folder, context):
+        ''' clubit.tools.edi.document:move()
+        ------------------------------------
         This method moves a file/document from a
         given state to another.
         ---------------------------------------- '''
-    def move(self, cr, uid, doc_id, to_folder, context):
 
         # Before we try to move the file, check if
         # its still there and everything is ok
@@ -452,13 +453,13 @@ class clubit_tools_edi_document_incoming(osv.Model):
 
 
 
-    ''' clubit.tools.edi.document.incoming:create_from_file()
-        -----------------------------------------------------
+    def create_from_file(self, cr, uid, location, name):
+        ''' clubit.tools.edi.document.incoming:create_from_file()
+        ---------------------------------------------------------
         This method is a wrapper method for the standard
         OpenERP create() method. It will prepare the vals[] for
         the standard method based on the file's location, flow & partner.
         ----------------------------------------------------------------- '''
-    def create_from_file(self, cr, uid, location, name):
 
         if isfile(join(location, name)) == False:
             raise osv.except_osv(_('Error!'), _('File not found: {!s}'.format(join(location, name))))
@@ -501,17 +502,18 @@ class clubit_tools_edi_document_incoming(osv.Model):
 
 
 
-    ''' clubit.tools.edi.document.incoming:import_process()
-        ---------------------------------------------------
+    def import_process(self, cr, uid):
+        ''' clubit.tools.edi.document.incoming:import_process()
+        -------------------------------------------------------
         This method reads the file system for all EDI active partners and
         their corresponding flows and will import the files to create active
         EDI documents. Once a file has been imported as a document, it needs
         to go through the entire EDI workflow process.
         -------------------------------------------------------------------- '''
-    def import_process(self, cr, uid):
 
         # Find all active EDI partners
         # ----------------------------
+        wf_service = netsvc.LocalService("workflow")
         partner_db = self.pool.get('res.partner')
         pids = partner_db.search(cr, uid, [('edi_relevant', '=', True)])
         if not pids:
@@ -561,20 +563,23 @@ class clubit_tools_edi_document_incoming(osv.Model):
                     # Actually create a new EDI Document
                     # This also triggers the workflow creation
                     # ----------------------------------------
-                    self.create_from_file(cr, uid, sub_path, f)
+                    new_doc = self.create_from_file(cr, uid, sub_path, f)
+                    if flow.flow_id.process_after_create:
+                        wf_service.trg_validate(uid, 'clubit.tools.edi.document.incoming', new_doc, 'button_to_ready', cr)
+
 
         return True
 
 
 
 
-    ''' clubit.tools.edi.document.incoming:document_process()
-        -----------------------------------------------------
+    def document_process(self, cr, uid):
+        ''' clubit.tools.edi.document.incoming:document_process()
+        ---------------------------------------------------------
         This method is the main scheduler which will process all the
         incoming EDI documents which are currently waiting in status 'ready'.
         The process will move all the documents to the state "processing".
         --------------------------------------------------------------------- '''
-    def document_process(self, cr, uid):
 
         # Find all documents that are ready to be processed
         # -------------------------------------------------
@@ -598,13 +603,13 @@ class clubit_tools_edi_document_incoming(osv.Model):
 
 
 
-    ''' clubit.tools.edi.document.incoming:valid()
-        ------------------------------------------
+    def valid(self, cr, uid, ids, *args):
+        ''' clubit.tools.edi.document.incoming:valid()
+        ----------------------------------------------
         This method checks wether or not the current document
         is valid according to the relevant EDI Flow implementation.
         If there is no implementation, it is valid by default.
         ----------------------------------------------------------- '''
-    def valid(self, cr, uid, ids, *args):
 
         assert len(ids) == 1
         document = self.browse(cr, uid, ids[0], None)
@@ -650,44 +655,44 @@ class clubit_tools_edi_document_incoming(osv.Model):
 
 
 
-    ''' clubit.tools.edi.document.incoming:action_new()
-        -----------------------------------------------
+    def action_new(self, cr, uid, ids):
+        ''' clubit.tools.edi.document.incoming:action_new()
+        ---------------------------------------------------
         This method is called when the object is created by the
         workflow engine. The object already exists at this point
         and we'll use this method to move the file into the EDI
         document system. This method will also trigger the
         automated validation workflow steps.
         -------------------------------------------------------- '''
-    def action_new(self, cr, uid, ids):
         assert len(ids) == 1
         self.write(cr, uid, ids, { 'state' : 'new' })
         return True
 
 
 
-    ''' clubit.tools.edi.document.incoming:action_in_error()
-        ----------------------------------------------------
+    def action_in_error(self, cr, uid, ids):
+        ''' clubit.tools.edi.document.incoming:action_in_error()
+        --------------------------------------------------------
         This method can be called from a number of places. For example
         when a user tries to mark a document as ready, or if processing
         resulted in an error. Putting a document in error will also
         put the "processed" attribute back to false.
         --------------------------------------------------------------- '''
-    def action_in_error(self, cr, uid, ids):
         assert len(ids) == 1
         self.write(cr, uid, ids, { 'state' : 'in_error', 'processed' : False })
         return True
 
 
 
-    ''' clubit.tools.edi.document.incoming:action_ready()
-        -------------------------------------------------
+    def action_ready(self, cr, uid, ids):
+        ''' clubit.tools.edi.document.incoming:action_ready()
+        -----------------------------------------------------
         This method is called when the user marks the document as
         ready. This means the document is ready to be picked up
         by the EDI Processing scheduler. Before the document is put
         to ready, it first passed through the validator() method
         *if* there's one defined in the concrete EDI Flow implementation
         ---------------------------------------------------------------- '''
-    def action_ready(self, cr, uid, ids):
         assert len(ids) == 1
         self.message_post(cr, uid, ids[0], body='EDI Document marked as ready for processing.')
         self.write(cr, uid, ids, { 'state' : 'ready' })
@@ -695,26 +700,26 @@ class clubit_tools_edi_document_incoming(osv.Model):
 
 
 
-    ''' clubit.tools.edi.document.incoming:action_processing()
-        ------------------------------------------------------
+    def action_processing(self, cr, uid, ids):
+        ''' clubit.tools.edi.document.incoming:action_processing()
+        ----------------------------------------------------------
         This method is called by the document_processor to mark
         documents as in processing. This is to make sure that documents
         don't get picked up by the system twice.
         --------------------------------------------------------------- '''
-    def action_processing(self, cr, uid, ids):
         assert len(ids) == 1
         self.write(cr, uid, ids, { 'state' : 'processing' })
         return True
 
 
 
-    ''' clubit.tools.edi.document.incoming:action_processed()
-        -----------------------------------------------------
+    def action_processed(self, cr, uid, ids):
+        ''' clubit.tools.edi.document.incoming:action_processed()
+        ---------------------------------------------------------
         This method is called by the document_processor to mark
         documents as having been processed. A user can't call this
         method manually.
         ---------------------------------------------------------- '''
-    def action_processed(self, cr, uid, ids):
         assert len(ids) == 1
 
         document = self.browse(cr, uid, ids[0], None)
@@ -738,13 +743,13 @@ class clubit_tools_edi_document_incoming(osv.Model):
 
 
 
-    ''' clubit.tools.edi.document.incoming:action_archive()
-        ---------------------------------------------------
+    def action_archive(self, cr, uid, ids):
+        ''' clubit.tools.edi.document.incoming:action_archive()
+        -------------------------------------------------------
         This method is called when the user marks the document
         as ready for archiving. This is the final step in the
         workflow and marks it is being done.
         ------------------------------------------------------ '''
-    def action_archive(self, cr, uid, ids):
         assert len(ids) == 1
         self.write(cr, uid, ids, { 'state' : 'archived' })
         self.move(cr, uid, ids[0], 'archived', None)
@@ -780,12 +785,12 @@ class clubit_tools_edi_document_outgoing(osv.Model):
     _file_creation_error   = 'file_creation_error'
 
 
-    ''' clubit.tools.edi.document.outgoing:create_from_content()
-        --------------------------------------------------------
+    def create_from_content(self, cr, uid, reference, content, partner_id, model, method, type='JSON'):
+        ''' clubit.tools.edi.document.outgoing:create_from_content()
+        ------------------------------------------------------------
         This method accepts content and creates an EDI document
         for each currently actively listening partner.
         ------------------------------------------------------- '''
-    def create_from_content(self, cr, uid, reference, content, partner_id, model, method, type='JSON'):
 
 
         # Resolve the method to an EDI flow
