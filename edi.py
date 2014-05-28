@@ -4,7 +4,8 @@ from os import listdir, path, makedirs
 from os.path import isfile, join, split
 from shutil import move
 import re, netsvc, json, csv, StringIO
-import datetime
+import datetime, logging
+from os import getcwd
 from pytz import timezone
 from openerp import SUPERUSER_ID
 try:
@@ -144,6 +145,9 @@ class res_partner(osv.Model):
         folders for all the EDI flows he is subscried to.
         -------------------------------------------------------------------- '''
 
+        log = logging.getLogger(None)
+        log.info('Maintaining the EDI directories')
+        log.info('The present working directory is: {!s}'.format(getcwd()))
 
         # Only process partners that are EDI relevant
         # -------------------------------------------
@@ -156,6 +160,7 @@ class res_partner(osv.Model):
             # ------------------------------------------------------
             root_path = join(_directory_edi_base, cr.dbname, str(partner.id))
             if not path.exists(root_path):
+                log.info('Required directory missing, attempting to create: {!s}'.format(root_path))
                 makedirs(root_path)
 
 
@@ -165,7 +170,9 @@ class res_partner(osv.Model):
             # ---------------------------------------------------------
             for flow in partner.edi_flows:
                 sub_path = join(root_path, str(flow.flow_id.id))
-                if not path.exists(sub_path): makedirs(sub_path)
+                if not path.exists(sub_path):
+                    log.info('Required directory missing, attempting to create: {!s}'.format(sub_path))
+                    makedirs(sub_path)
 
 
                 # Create folders to help the system keep track
@@ -184,6 +191,10 @@ class res_partner(osv.Model):
         list of partner_id's with their current corresponding names for easier
         lookups.
         ------------------------------------------------------------------------------- '''
+
+        log = logging.getLogger(None)
+        log.info('Updating the EDI partner overview file')
+        log.info('The present working directory is: {!s}'.format(getcwd()))
 
         # Find all active EDI partners
         # ----------------------------
@@ -206,6 +217,7 @@ class res_partner(osv.Model):
         # Write this info to a helper file
         # --------------------------------
         path = join(_directory_edi_base, cr.dbname, "partners.edi")
+        log.info('Attempting to look up the partner file at: {!s}'.format(path))
         f = open(path ,"w")
         f.write(content)
         f.close()
