@@ -524,12 +524,16 @@ class clubit_tools_edi_document_incoming(osv.Model):
         to go through the entire EDI workflow process.
         -------------------------------------------------------------------- '''
 
+        log = logging.getLogger(None)
+        log.info('EDI_IMPORT: Starting the EDI document import process.')
+
         # Find all active EDI partners
         # ----------------------------
         wf_service = netsvc.LocalService("workflow")
         partner_db = self.pool.get('res.partner')
         pids = partner_db.search(cr, uid, [('edi_relevant', '=', True)])
         if not pids:
+            log.info('EDI_IMPORT: No active EDI partners at the moment, processing is done.')
             return True
 
 
@@ -581,6 +585,7 @@ class clubit_tools_edi_document_incoming(osv.Model):
                         wf_service.trg_validate(uid, 'clubit.tools.edi.document.incoming', new_doc, 'button_to_ready', cr)
 
 
+        log.info('EDI_IMPORT: Document import process is done.')
         return True
 
 
@@ -596,8 +601,11 @@ class clubit_tools_edi_document_incoming(osv.Model):
 
         # Find all documents that are ready to be processed
         # -------------------------------------------------
+        log = logging.getLogger(None)
+        log.info('DOCUMENT_PROCESS: Starting the EDI document processor.')
         documents = self.search(cr, uid, [('state', '=', 'ready')])
         if not documents:
+            log.info('DOCUMENT_PROCESS: No documents found, processing is done.')
             return True
 
         # Mark all of these documents as in 'processing' to make sure they don't
@@ -608,6 +616,7 @@ class clubit_tools_edi_document_incoming(osv.Model):
         for document in documents:
             wf_service.trg_validate(uid, 'clubit.tools.edi.document.incoming', document, 'document_processor_pickup', cr)
 
+        log.info('DOCUMENT_PROCESS: EDI document processor is done.')
         return True
 
 
