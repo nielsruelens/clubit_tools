@@ -22,6 +22,26 @@
                 <field name="perm_read" eval="1" />
             </record>
 
+            <record model="ir.model.access" id="clubit_tools_access_settings">
+                <field name="model_id" ref="clubit_tools.model_clubit_tools_settings" />
+                <field name="name">clubit.tools.settings.document</field>
+                <field name="group_id" ref="clubit_tools_edi_user" />
+                <field name="perm_read" eval="1" />
+                <field name="perm_write" eval="1" />
+                <field name="perm_unlink" eval="1" />
+                <field name="perm_create" eval="1" />
+            </record>
+
+            <record model="ir.model.access" id="clubit_tools_access_settings_connection">
+                <field name="model_id" ref="clubit_tools.model_clubit_tools_settings_connection" />
+                <field name="name">clubit.tools.settings.connection.document</field>
+                <field name="group_id" ref="clubit_tools_edi_user" />
+                <field name="perm_read" eval="1" />
+                <field name="perm_write" eval="1" />
+                <field name="perm_unlink" eval="1" />
+                <field name="perm_create" eval="1" />
+            </record>
+
             <record model="ir.model.access" id="clubit_tools_edi_access_document">
                 <field name="model_id" ref="clubit_tools.model_clubit_tools_edi_document" />
                 <field name="name">clubit.tools.edi.user.document</field>

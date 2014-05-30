@@ -216,9 +216,10 @@ class res_partner(osv.Model):
 
         # Write this info to a helper file
         # --------------------------------
-        path = join(_directory_edi_base, cr.dbname, "partners.edi")
-        log.info('Attempting to look up the partner file at: {!s}'.format(path))
-        f = open(path ,"w")
+        if not path.exists(join(_directory_edi_base, cr.dbname)): makedirs(join(_directory_edi_base, cr.dbname))
+        file_path = join(_directory_edi_base, cr.dbname, "partners.edi")
+        log.info('Attempting to look up the partner file at: {!s}'.format(file_path))
+        f = open(file_path ,"w")
         f.write(content)
         f.close()
 
