@@ -514,6 +514,79 @@ class clubit_tools_edi_document_incoming(osv.Model):
 
 
 
+    def create_from_web_request(self, cr, uid, partner, flow, reference, content, data_type):
+        ''' clubit.tools.edi.document.incoming:create_from_web_request()
+        ----------------------------------------------------------------
+        This method creates a new incoming EDI document based on the
+        provided input. It provides an easy way to create EDI documents using
+        the web.
+        -------------------------------------------------------------------- '''
+
+        # Find the correct EDI flow
+        # -------------------------
+        model_db = self.pool.get('ir.model.data')
+        flow_id = model_db.search(cr, uid, [('name', '=', flow), ('model','=','clubit.tools.edi.flow')])
+        if not flow_id or not flow: return 'Parameter "flow" could not be resolved, request aborted.'
+        flow_id = model_db.browse(cr, uid, flow_id)[0]
+        flow_id = flow_id.res_id
+        flow_object = self.pool.get('clubit.tools.edi.flow').browse(cr, uid, flow_id)
+
+        # Find the correct partner
+        # ------------------------
+        partner_id = model_db.search(cr, uid, [('name', '=', partner), ('model','=','res.partner')])
+        if not partner_id or not partner: return 'Parameter "partner" could not be resolved, request aborted.'
+        partner_id = model_db.browse(cr, uid, partner_id)[0]
+        partner_id = partner_id.res_id
+
+        if not reference: return 'Parameter "reference" cannot be empty, request aborted.'
+        if not content:   return 'Parameter "content" cannot be empty, request aborted.'
+        if data_type != 'xml' and data_type != 'json':
+            return 'Parameter "data_type" should be either "xml" or "json", request aborted.'
+
+        # Make sure the partner is listening to this flow
+        # -----------------------------------------------
+        partnerflow_id = self.pool.get('clubit.tools.edi.partnerflow').search(cr, uid, [('partnerflow_id','=', partner_id), ('flow_id','=', flow_id), ('partnerflow_active','=', True)])
+        if not partnerflow_id: return 'The provided partner is not currently listening to the provided EDI flow, request aborted.'
+
+        # Make sure the file doesn't already exist
+        # ----------------------------------------
+        filename = '.'.join([reference, data_type])
+        doc_id = self.search(cr, uid, [('flow_id', '=', flow_id), ('partner_id', '=', partner_id), ('reference', '=', reference)])
+        if doc_id: return 'This reference has already been processed, request aborted.'
+
+
+        location = join(_directory_edi_base, cr.dbname, str(partner_id), str(flow_id), 'imported')
+
+        values = {
+            'name'       : filename,
+            'reference'  : reference,
+            'partner_id' : partner_id,
+            'flow_id'    : flow_id,
+            'content'    : content,
+            'state'      : 'new',
+            'location'   : location,
+        }
+
+        # If the document creation is successful, write the file to disk
+        # --------------------------------------------------------------
+        doc_id = self.create(cr, uid, values)
+        if not doc_id: return 'Something went wrong trying to create the EDI document, request aborted.'
+        try:
+            with open (join(location, filename), "w") as f:
+                f.write(content)
+        except Exception as e:
+            self.unlink(cr, uid, doc_id)
+            return 'Something went wrong writing the file to disk, request aborted. Error given: {!s}'.format(str(e))
+
+        # Push forward the document if customized
+        # ---------------------------------------
+        if flow_object.process_after_create:
+            wf_service = netsvc.LocalService("workflow")
+            wf_service.trg_validate(uid, 'clubit.tools.edi.document.incoming', doc_id, 'button_to_ready', cr)
+
+        return True
+
+
 
     def import_process(self, cr, uid):
         ''' clubit.tools.edi.document.incoming:import_process()
