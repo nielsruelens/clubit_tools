@@ -145,7 +145,7 @@
             <field name="model">clubit.tools.edi.document.outgoing</field>
             <field name="priority">1</field>
             <field name="arch" type="xml">
-                <tree create="false" delete="false" string="Outgoing Documents">
+                <tree create="false" string="Outgoing Documents">
                     <field name="partner_id"/>
                     <field name="flow_id"/>
                     <field name="reference"/>
