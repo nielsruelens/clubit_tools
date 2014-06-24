@@ -573,11 +573,11 @@ class clubit_tools_edi_document_incoming(osv.Model):
         if not doc_id: return 'Something went wrong trying to create the EDI document, request aborted.'
         try:
             with open (join(location, filename), "w") as f:
-                f.write(content)
+                f.write(content.encode('utf8'))
         except Exception as e:
             self.write(cr, uid, doc_id, {'state':'in_error'})
             self.unlink(cr, uid, [doc_id])
-            return 'Something went wrong writing the file to disk, request aborted. Error given: {0}'.format(str(e.args[0])).encode("utf-8")
+            return 'Something went wrong writing the file to disk, request aborted. Error given: {!s}'.format(str(e))
 
         # Push forward the document if customized
         # ---------------------------------------
