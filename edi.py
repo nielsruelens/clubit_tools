@@ -575,6 +575,7 @@ class clubit_tools_edi_document_incoming(osv.Model):
             with open (join(location, filename), "w") as f:
                 f.write(content)
         except Exception as e:
+            self.write(cr, uid, doc_id, {'state':'in_error'})
             self.unlink(cr, uid, [doc_id])
             return 'Something went wrong writing the file to disk, request aborted. Error given: {!s}'.format(str(e))
 
