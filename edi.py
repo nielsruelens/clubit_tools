@@ -577,7 +577,7 @@ class clubit_tools_edi_document_incoming(osv.Model):
         except Exception as e:
             self.write(cr, uid, doc_id, {'state':'in_error'})
             self.unlink(cr, uid, [doc_id])
-            return 'Something went wrong writing the file to disk, request aborted. Error given: {!s}'.format(str(e))
+            return 'Something went wrong writing the file to disk, request aborted. Error given: {0}'.format(str(e.args[0])).encode("utf-8")
 
         # Push forward the document if customized
         # ---------------------------------------
