@@ -129,7 +129,7 @@
             <field name="arch" type="xml">
                 <tree
                     colors="grey:state=='archived';green:state=='processed';blue:state in ('processing','edited');red:state=='in_error'"
-                    create="false" delete="false" string="Incoming Documents">
+                    create="false" string="Incoming Documents">
                     <field name="partner_id"/>
                     <field name="flow_id"/>
                     <field name="name"/>

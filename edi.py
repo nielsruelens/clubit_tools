@@ -307,18 +307,18 @@ class clubit_tools_edi_document(osv.Model):
     }
 
 
-    def unlink(self, cr, uid, ids, context=None):
-        ''' clubit.tools.edi.document:unlink()
-        --------------------------------------
-        This method overwrites the default unlink/delete() method
-        to make sure a document can only be deleted when it's
-        in state "in_error"
-        --------------------------------------------------------- '''
-        assert len(ids) == 1
-        document = self.browse(cr, uid, ids, context=context)[0]
-        if document.state != 'in_error':
-            raise osv.except_osv(_('Document deletion failed!'), _('You may only delete a document when it is in state error.'))
-        return super(clubit_tools_edi_document, self).unlink(cr, uid, ids, context=context)
+    #def unlink(self, cr, uid, ids, context=None):
+    #    ''' clubit.tools.edi.document:unlink()
+    #    --------------------------------------
+    #    This method overwrites the default unlink/delete() method
+    #    to make sure a document can only be deleted when it's
+    #    in state "in_error"
+    #    --------------------------------------------------------- '''
+    #    assert len(ids) == 1
+    #    document = self.browse(cr, uid, ids, context=context)[0]
+    #    if document.state != 'in_error':
+    #        raise osv.except_osv(_('Document deletion failed!'), _('You may only delete a document when it is in state error.'))
+    #    return super(clubit_tools_edi_document, self).unlink(cr, uid, ids, context=context)
 
 
 
