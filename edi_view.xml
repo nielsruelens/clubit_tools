@@ -284,6 +284,12 @@
             id="menu_clubit_tools_customers" name="Customers" parent="menu_clubit_tools_config"/>
         <menuitem action="base.action_partner_supplier_form"
             id="menu_clubit_tools_suppliers" name="Suppliers" parent="menu_clubit_tools_config"/>
+        <!-- Reporting -->
+        <menuitem groups="clubit_tools_edi_user"
+            id="menu_clubit_tools_reporting" name="Reporting" parent="menu_clubit_tools"/>
+
+
+
         <!-- EDI Document Form Views-->
         <record id="view_clubit_tools_edi_document_incoming_form" model="ir.ui.view">
             <field name="name">view.clubit.tools.edi.document.incoming.form</field>

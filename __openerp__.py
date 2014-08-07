@@ -11,10 +11,12 @@
     'data': [
         'security.xml',
         'edi_view.xml',
+        'edi_streets.xml',
         'edi_schedulers.xml',
         'wizard/edi_wizard_ready.xml',
         'wizard/edi_wizard_archive_incoming.xml',
         'wizard/edi_wizard_outgoing.xml',
+        'wizard/edi_streets_wizard.xml',
         'edi_workflow_incoming.xml',
     ],
     'demo': [],

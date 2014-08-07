@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openerp>
+    <data>
+        <record id="clubit_tools_edi_street_wizard_view" model="ir.ui.view">
+            <field name="name">clubit.tools.edi.street.wizard.view</field>
+            <field name="model">clubit.tools.edi.street.wizard</field>
+            <field name="arch" type="xml">
+                <form string="EDI Street Analysis" version="7.0">
+                    <separator string="Street Selection"/>
+                    <group>
+                        <field name="street"/>
+                        <field name="start_at"/>
+                        <field name="end_at"/>
+	                    <field name="lines">
+			                <tree string="Analysis" create="false" delete="false">
+			                    <field name="reference"/>
+			                    <field name="step_0" />
+			                    <field name="step_1" />
+			                    <field name="step_2" />
+			                    <field name="step_3" />
+			                    <field name="step_4" />
+			                    <field name="step_5" />
+			                    <field name="step_6" />
+			                    <field name="step_7" />
+			                    <field name="step_8" />
+			                    <field name="step_9" />
+			                </tree>
+						</field>
+                    </group>
+    			<footer>
+    				<button name="start" type="object" string="Show Analysis" />
+    				or
+    				<button string="Cancel" special="cancel" />
+    			</footer>
+                </form>
+            </field>
+        </record>
+        <record id="action_edi_street_analysis" model="ir.actions.act_window">
+            <field name="name">Street Analysis</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">clubit.tools.edi.street.wizard</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+        <menuitem action="action_edi_street_analysis"
+            groups="clubit_tools_edi_user"
+            id="menu_clubit_tools_edi_street_analysis" parent="menu_clubit_tools_edi"/>
+    </data>
+</openerp>

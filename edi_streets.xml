@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openerp>
+    <data>
+        <record id="clubit_tools_edi_street_form" model="ir.ui.view">
+            <field name="name">clubit.tools.edi.street.form</field>
+            <field name="model">clubit.tools.edi.street</field>
+            <field name="arch" type="xml">
+                <form string="EDI Streets" version="7.0">
+                    <separator string="General Information"/>
+                    <group>
+                        <field name="name"/>
+                    </group>
+                    <separator string="EDI Steps"/>
+                    <field name="steps">
+                        <tree editable="bottom" string="EDI Steps">
+                            <field name="sequence"/>
+                            <field name="desired_response_time"/>
+                            <field name="desired_response_unit"/>
+                            <field name="description"/>
+                            <field name="flow"/>
+                        </tree>
+                    </field>
+                </form>
+            </field>
+        </record>
+        <record id="action_edi_streets" model="ir.actions.act_window">
+            <field name="name">EDI Streets</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">clubit.tools.edi.street</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">tree,form</field>
+            <field name="context">{}</field>
+            <field name="domain">[]</field>
+        </record>
+        <menuitem action="action_edi_streets"
+            groups="clubit_tools_edi_user"
+            id="menu_clubit_tools_edi_streets" parent="menu_clubit_tools_config"/>
+    </data>
+</openerp>
