@@ -20,6 +20,7 @@
             <field name="arch" type="xml">
                 <form string="Connection" version="7.0">
                     <group>
+                    	<field name="active"/>
 	                    <field name="partner"/>
 	                    <field name="name"/>
 	                    <field name="url"/>

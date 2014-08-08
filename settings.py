@@ -8,6 +8,7 @@ class clubit_tools_settings_connection(osv.Model):
     _columns = {
         'setting': fields.many2one('clubit.tools.settings', 'Settings', ondelete='cascade', required=True, select=True),
         'partner': fields.many2one('res.partner', 'Partner', ondelete='cascade', required=True, select=True),
+        'active': fields.boolean('Active'),
         'name': fields.char('Name', size=50),
         'url': fields.char('Address', size=256, required=True),
         'port': fields.integer('Port', required=True),
