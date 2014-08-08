@@ -20,7 +20,7 @@
             <field name="arch" type="xml">
                 <form string="Connection" version="7.0">
                     <group>
-                    	<field name="active"/>
+                    	<field name="is_active"/>
 	                    <field name="partner"/>
 	                    <field name="name"/>
 	                    <field name="url"/>
@@ -45,6 +45,7 @@
                     <separator string="Connections"/>
                     <field name="connections">
 		                <tree string="Connections">
+		                	<field name="is_active"/>
 		                    <field name="partner"/>
 		                    <field name="name"/>
 		                    <field name="url"/>
