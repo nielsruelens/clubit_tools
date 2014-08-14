@@ -63,6 +63,7 @@ class clubit_tools_edi_flow(osv.Model):
         'validator': fields.char('Validator Name', size=64, required=False, readonly=True),
         'partner_resolver': fields.char('Partner Resolver Name', size=64, required=False, readonly=True),
         'process_after_create' : fields.boolean('Automatically process after create'),
+        'allow_duplicates' : fields.boolean('Allow duplicate references'),
     }
 
 
@@ -548,11 +549,12 @@ class clubit_tools_edi_document_incoming(osv.Model):
         partnerflow_id = self.pool.get('clubit.tools.edi.partnerflow').search(cr, uid, [('partnerflow_id','=', partner_id), ('flow_id','=', flow_id), ('partnerflow_active','=', True)])
         if not partnerflow_id: return 'The provided partner is not currently listening to the provided EDI flow, request aborted.'
 
-        # Make sure the file doesn't already exist
-        # ----------------------------------------
+        # Make sure the file doesn't already exist, unless duplicates are allowed
+        # -----------------------------------------------------------------------
         filename = '.'.join([reference, data_type])
-        doc_id = self.search(cr, uid, [('flow_id', '=', flow_id), ('partner_id', '=', partner_id), ('reference', '=', reference)])
-        if doc_id: return 'This reference has already been processed, request aborted.'
+        if not flow_object.allow_duplicates:
+            doc_id = self.search(cr, uid, [('flow_id', '=', flow_id), ('partner_id', '=', partner_id), ('reference', '=', reference)])
+            if doc_id: return 'This reference has already been processed, request aborted.'
 
 
         location = join(_directory_edi_base, cr.dbname, str(partner_id), str(flow_id), 'imported')
@@ -644,11 +646,13 @@ class clubit_tools_edi_document_incoming(osv.Model):
 
                     # Entering ultra defensive mode: make sure that this
                     # file isn't already converted to an EDI document yet!
+                    # Unless this is specifically allowed by the flow
                     # ----------------------------------------------------
-                    duplicate = self.search(cr, uid, [('partner_id', '=', partner.id),
-                                                      ('flow_id', '=', flow.flow_id.id),
-                                                      ('name', '=', f)])
-                    if len(duplicate) > 0: continue
+                    if not flow.flow_id.allow_duplicates:
+                        duplicate = self.search(cr, uid, [('partner_id', '=', partner.id),
+                                                          ('flow_id', '=', flow.flow_id.id),
+                                                          ('name', '=', f)])
+                        if len(duplicate) > 0: continue
 
 
                     # Actually create a new EDI Document

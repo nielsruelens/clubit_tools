@@ -111,6 +111,7 @@
                 <tree create="false" delete="false" string="EDI Flows">
                     <field name="name"/>
                 	<field name="process_after_create"/>
+                	<field name="allow_duplicates"/>
                     <field name="direction"/>
                     <field name="validator"/>
                     <field name="model"/>
