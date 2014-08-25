@@ -372,9 +372,9 @@ class clubit_tools_edi_document(osv.Model):
         # Make sure the file doesn't exist already
         # at the to_path location
         # ----------------------------------------
-        if isfile(to_path):
-            self.message_post(cr, uid, document.id, body='Could not move file, it already exists at the destination folder.')
-            return {'error' : self._error_file_already_exists_at_destination}
+        #if isfile(to_path):
+        #    self.message_post(cr, uid, document.id, body='Could not move file, it already exists at the destination folder.')
+        #    return {'error' : self._error_file_already_exists_at_destination}
 
 
         # Actually try to move the file using shutil.move()
