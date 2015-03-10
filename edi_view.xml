@@ -318,13 +318,15 @@
             <field name="name">view.clubit.tools.edi.document.incoming.form</field>
             <field name="model">clubit.tools.edi.document.incoming</field>
             <field name="arch" type="xml">
-                <form create="false" duplicate="false"
+                <form  
                     string="Incoming Document" version="7.0">
                     <header>
                         <button name="button_to_ready"
                             states="new,in_error" string="Ready"/>
+                        <button name="document_manual_process" type="object" 
+                            states="ready" string="Process" class="oe_highlight"/>
                         <button name="button_to_archived"
-                            states="processed" string="Archive"/>
+                            states="new,ready,processed,in_error" string="Archive"/>
                         <field name="state"
                             statusbar_visible="new,in_error,ready,processed,archived" widget="statusbar"/>
                     </header>

@@ -406,6 +406,45 @@ class clubit_tools_edi_document(osv.Model):
 
         return True
 
+    def copy(self, cr, uid, id, default=None, context=None):
+        if default is None:
+            default = {}
+        document = self.browse(cr, uid, id, context=context)
+
+        name = self.create_unique_name_from_existing_name(cr, uid, document.name)
+        # write document to disk
+        location = join(_directory_edi_base, cr.dbname, str(document.partner_id.id), str(document.flow_id.id), 'imported')
+        with open (join(location, name), "w") as f:
+            f.write(document.content.encode('utf8'))
+
+        default.update({
+          'name': name,
+          'location': location,
+          'state': 'new',
+          'reference': None
+        })
+        res = super(clubit_tools_edi_document, self).copy(cr, uid, id, default, context)
+        return res
+
+    def create_unique_name_from_existing_name(self, cr, uid, existing_name):
+        # remove the file extension
+        name_without_extension, extension = path.splitext(existing_name)
+        # check if the file was duplicated before
+        res = re.findall(r'-([0-9]*)$', name_without_extension)
+        if res:
+          counter = int(res[0]) + 1
+          name_without_extension = re.sub(r'-[0-9]*$', "-%d"%(counter), name_without_extension)
+        else:
+          name_without_extension = name_without_extension + '-1'
+        # append extension
+        name = name_without_extension + extension
+        # make sure the name doesn't already exist
+        ids = self.search(cr, uid, [('name','=',name)])
+        if not ids:
+          return name
+        else:
+          self.create_unique_name_from_existing_name(cr, uid, name)
+
 ##############################################################################
 #
 #    clubit.tools.edi.document.incoming
@@ -414,7 +453,7 @@ class clubit_tools_edi_document(osv.Model):
 #    to the most complicated workflow in the EDI system.
 #
 ##############################################################################
-class clubit_tools_edi_document_incoming(osv.Model):
+class clubit_tools_edi_document_incoming(osv.osv):
     _name = "clubit.tools.edi.document.incoming"
     _inherit = ['clubit.tools.edi.document']
     _description = "Incoming EDI Document"
@@ -422,6 +461,16 @@ class clubit_tools_edi_document_incoming(osv.Model):
     _columns = {
         'processed': fields.boolean('Processed', readonly=True),
     }
+
+    def copy(self, cr, uid, id, default=None, context=None):
+        context = context or {}
+        default = default and default.copy() or {}
+        return super(clubit_tools_edi_document_incoming, self).copy(cr, uid, id, default=default, context=context)
+
+    def document_manual_process(self, cr, uid, ids, context=None):
+        wf_service = netsvc.LocalService("workflow")
+        wf_service.trg_validate(uid, 'clubit.tools.edi.document.incoming', ids[0], 'document_processor_pickup', cr)
+        return True
 
     def create_from_file(self, cr, uid, location, name):
         ''' clubit.tools.edi.document.incoming:create_from_file()
