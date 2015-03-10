@@ -4,7 +4,8 @@ from os import listdir, path, makedirs
 from os.path import isfile, join, split
 from shutil import move
 import re, netsvc, json, csv, StringIO
-import datetime, logging
+import datetime
+import logging
 from os import getcwd
 from pytz import timezone
 from openerp import SUPERUSER_ID
@@ -12,6 +13,8 @@ try:
     import xml.etree.cElementTree as ET
 except ImportError:
     import xml.etree.ElementTree as ET
+
+_logger = logging.getLogger(__name__)
 
 ##############################################################################
 #
@@ -38,10 +41,7 @@ except ImportError:
 #
 ##############################################################################
 
-
 _directory_edi_base = "EDI"
-
-
 
 ##############################################################################
 #
@@ -56,21 +56,16 @@ _directory_edi_base = "EDI"
 class clubit_tools_edi_flow(osv.Model):
     _name = "clubit.tools.edi.flow"
     _columns = {
-        'name' : fields.char('Flow Name', size=64, required=True, readonly=True),
+        'name': fields.char('Flow Name', size=64, required=True, readonly=True),
         'direction': fields.selection([('in', 'Incoming'), ('out', 'Outgoing')], 'Direction', required=True, readonly=True),
         'model': fields.char('Model Name', size=64, required=True, readonly=True),
         'method': fields.char('Method Name', size=64, required=False, readonly=True),
         'validator': fields.char('Validator Name', size=64, required=False, readonly=True),
         'partner_resolver': fields.char('Partner Resolver Name', size=64, required=False, readonly=True),
-        'process_after_create' : fields.boolean('Automatically process after create'),
-        'allow_duplicates' : fields.boolean('Allow duplicate references'),
+        'process_after_create': fields.boolean('Automatically process after create'),
+        'allow_duplicates': fields.boolean('Allow duplicate references'),
+        'ignore_partner_ids': fields.many2many('res.partner', 'clubit_tools_ignore_partner_rel', 'flow_id', 'partner_id', help="A list of partners that need to be ignored. The content is retrieved from the edi document."),
     }
-
-
-
-
-
-
 
 ##############################################################################
 #
@@ -87,9 +82,6 @@ class clubit_tools_edi_partnerflow(osv.Model):
         'flow_id': fields.many2one('clubit.tools.edi.flow', 'Flow', required=True, select=True, readonly=False),
         'partnerflow_active' : fields.boolean('Active'),
     }
-
-
-
 
 ##############################################################################
 #
@@ -110,7 +102,6 @@ class res_partner(osv.Model):
         'edi_flows': fields.one2many('clubit.tools.edi.partnerflow', 'partnerflow_id', 'EDI Flows', readonly=False),
     }
 
-
     def create(self, cr, uid, vals, context=None):
         ''' res.partner:create()
         ------------------------
@@ -121,7 +112,6 @@ class res_partner(osv.Model):
         self.maintain_edi_directories(cr, uid, [new_id], context)
         self.update_partner_overview_file(cr, uid, context)
         return new_id
-
 
     def write(self, cr, uid, ids, vals, context=None):
         ''' res.partner:write()
@@ -134,10 +124,6 @@ class res_partner(osv.Model):
         self.update_partner_overview_file(cr, uid, context)
         return result
 
-
-
-
-
     def maintain_edi_directories(self, cr, uid, ids, context=None):
         ''' res.partner:maintain_edi_directories()
         ------------------------------------------
@@ -146,22 +132,21 @@ class res_partner(osv.Model):
         folders for all the EDI flows he is subscried to.
         -------------------------------------------------------------------- '''
 
-        log = logging.getLogger(None)
-        log.info('Maintaining the EDI directories')
-        log.info('The present working directory is: {!s}'.format(getcwd()))
+        _logger.debug('Maintaining the EDI directories')
+        _logger.debug('The present working directory is: {!s}'.format(getcwd()))
 
         # Only process partners that are EDI relevant
         # -------------------------------------------
         for partner in self.browse(cr, uid, ids, context=context):
             if not partner.edi_relevant:
                 continue
-
+            _logger.debug("Processing partner %d (%s)", partner.id, partner.name)
 
             # Find and/or create the root directory for this partner
             # ------------------------------------------------------
             root_path = join(_directory_edi_base, cr.dbname, str(partner.id))
             if not path.exists(root_path):
-                log.info('Required directory missing, attempting to create: {!s}'.format(root_path))
+                _logger.debug('Required directory missing, attempting to create: {!s}'.format(root_path))
                 makedirs(root_path)
 
 
@@ -172,18 +157,16 @@ class res_partner(osv.Model):
             for flow in partner.edi_flows:
                 sub_path = join(root_path, str(flow.flow_id.id))
                 if not path.exists(sub_path):
-                    log.info('Required directory missing, attempting to create: {!s}'.format(sub_path))
+                    _logger.debug('Required directory missing, attempting to create: {!s}'.format(sub_path))
                     makedirs(sub_path)
 
 
                 # Create folders to help the system keep track
                 # --------------------------------------------
                 if flow.flow_id.direction == 'in':
+                    _logger.debug("Creating directories imported and archived for incoming edi documents")
                     if not path.exists(join(sub_path, 'imported')):   makedirs(join(sub_path, 'imported'))
                     if not path.exists(join(sub_path, 'archived')):   makedirs(join(sub_path, 'archived'))
-
-
-
 
     def update_partner_overview_file(self, cr, uid, context):
         ''' res.partner:update_partner_overview_file()
@@ -193,9 +176,8 @@ class res_partner(osv.Model):
         lookups.
         ------------------------------------------------------------------------------- '''
 
-        log = logging.getLogger(None)
-        log.info('Updating the EDI partner overview file')
-        log.info('The present working directory is: {!s}'.format(getcwd()))
+        _logger.debug('Updating the EDI partner overview file')
+        _logger.debug('The present working directory is: {!s}'.format(getcwd()))
 
         # Find all active EDI partners
         # ----------------------------
@@ -205,7 +187,7 @@ class res_partner(osv.Model):
             return True
 
 
-        # Loop over each partner and create a simple info list
+        # Loop over each partner and create a simple.debug list
         # ----------------------------------------------------
         partners = partner_db.browse(cr, uid, pids, None)
         content = ""
@@ -215,15 +197,14 @@ class res_partner(osv.Model):
             for flow in partner.edi_flows:
                 content += "\t" + str(flow.flow_id.id) + " " + flow.flow_id.name + "\n"
 
-        # Write this info to a helper file
+        # Write this.debug to a helper file
         # --------------------------------
         if not path.exists(join(_directory_edi_base, cr.dbname)): makedirs(join(_directory_edi_base, cr.dbname))
         file_path = join(_directory_edi_base, cr.dbname, "partners.edi")
-        log.info('Attempting to look up the partner file at: {!s}'.format(file_path))
+        _logger.debug('Attempting to look up the partner file at: {!s}'.format(file_path))
         f = open(file_path ,"w")
         f.write(content)
         f.close()
-
 
     def listen_to_edi_flow(self, cr, uid, partner_id, flow_id):
         ''' res.partner:listen_to_edi_flow()
@@ -257,9 +238,6 @@ class res_partner(osv.Model):
             return True
         return False
 
-
-
-
 ##############################################################################
 #
 #    clubit.tools.edi.document
@@ -277,7 +255,6 @@ class clubit_tools_edi_document(osv.Model):
     _error_file_already_exists_at_destination = 'file_already_exists_at_destination'
     _error_file_move_failed                   = 'file_move_failed'
 
-
     def _function_message_get(self, cr, uid, ids, field, arg, context=None):
         ''' clubit.tools.edi.document:_function_message_get()
         -----------------------------------------------------
@@ -288,7 +265,6 @@ class clubit_tools_edi_document(osv.Model):
         for document in self.browse(cr, uid, ids, context=context):
             res[document.id] = re.sub('<[^<]+?>', '',document.message_ids[0].body)
         return res
-
 
     _columns = {
         'name' : fields.char('Name', size=256, required=True, readonly=True),
@@ -307,7 +283,6 @@ class clubit_tools_edi_document(osv.Model):
         'create_date':fields.datetime('Creation date'),
     }
 
-
     #def unlink(self, cr, uid, ids, context=None):
     #    ''' clubit.tools.edi.document:unlink()
     #    --------------------------------------
@@ -321,8 +296,6 @@ class clubit_tools_edi_document(osv.Model):
     #        raise osv.except_osv(_('Document deletion failed!'), _('You may only delete a document when it is in state error.'))
     #    return super(clubit_tools_edi_document, self).unlink(cr, uid, ids, context=context)
 
-
-
     def check_location(self, cr, uid, doc_id, context):
         ''' clubit.tools.edi.document:check_location()
         ----------------------------------------------
@@ -332,8 +305,6 @@ class clubit_tools_edi_document(osv.Model):
 
         document = self.browse(cr, uid, doc_id, context=context)
         return isfile(join(document.location, document.name))
-
-
 
     def move(self, cr, uid, doc_id, to_folder, context):
         ''' clubit.tools.edi.document:move()
@@ -346,8 +317,8 @@ class clubit_tools_edi_document(osv.Model):
         # its still there and everything is ok
         # ----------------------------------------
         if not self.check_location(cr, uid, doc_id, context ):
+            _logger.debug("File for edi document %d is not at the location we expect it to be. Aborting", doc_id)
             return False
-
 
         # The moving of files should be allowed so let's carry on!
         # --------------------------------------------------------
@@ -368,6 +339,7 @@ class clubit_tools_edi_document(osv.Model):
             path, dummy = split(document.location)
             to_path = join(path, to_folder, document.name)
 
+        _logger.debug("Moving document with id %d (%s)from folder %s to folder %s", document.id, document.name, from_path, to_path)
 
         # Make sure the file doesn't exist already
         # at the to_path location
@@ -383,11 +355,10 @@ class clubit_tools_edi_document(osv.Model):
         # ----------------------------------------------------------------
         try:
             move(from_path, to_path)
+            _logger.debug("Move file successful")
         except Exception:
             self.message_post(cr, uid, document.id, body='An unknown error occurred during the moving of the file.')
             return {'error' : self._error_file_move_failed}
-
-
 
         # Check if the move actually took place
         # -------------------------------------
@@ -398,11 +369,9 @@ class clubit_tools_edi_document(osv.Model):
             self.message_post(cr, uid, document.id, body='File moving failed, it is not present at the target location.')
             return {'error' : self._error_file_move_failed}
 
-
         path, dummy = split(to_path)
         self.write(cr, uid, document.id, {'location' : path}, context)
         return True
-
 
     def position_document(self, cr, uid, partner_id, flow_id, content, content_type='json'):
         ''' clubit.tools.edi.document:position_document()
@@ -435,18 +404,7 @@ class clubit_tools_edi_document(osv.Model):
                 for line in content:
                     temp_file.write(line)
 
-
         return True
-
-
-
-
-
-
-
-
-
-
 
 ##############################################################################
 #
@@ -465,8 +423,6 @@ class clubit_tools_edi_document_incoming(osv.Model):
         'processed': fields.boolean('Processed', readonly=True),
     }
 
-
-
     def create_from_file(self, cr, uid, location, name):
         ''' clubit.tools.edi.document.incoming:create_from_file()
         ---------------------------------------------------------
@@ -474,6 +430,8 @@ class clubit_tools_edi_document_incoming(osv.Model):
         OpenERP create() method. It will prepare the vals[] for
         the standard method based on the file's location, flow & partner.
         ----------------------------------------------------------------- '''
+
+        _logger.debug("Creating edi document from file %s at location %s", name, location)
 
         if isfile(join(location, name)) == False:
             raise osv.except_osv(_('Error!'), _('File not found: {!s}'.format(join(location, name))))
@@ -503,17 +461,14 @@ class clubit_tools_edi_document_incoming(osv.Model):
         with open (join(location, name), "r") as f:
             vals['content'] = f.read()
 
-
-
         # Create the actual EDI document, triggering
         # the workflow to start
         # ------------------------------------------
         new_id = self.create(cr, uid, vals, None)
+        _logger.debug("Created edi document with id %d", new_id)
         if new_id != False:
             self.move(cr, uid, new_id, 'imported', None)
         return new_id
-
-
 
     def create_from_web_request(self, cr, uid, partner, flow, reference, content, data_type):
         ''' clubit.tools.edi.document.incoming:create_from_web_request()
@@ -523,6 +478,8 @@ class clubit_tools_edi_document_incoming(osv.Model):
         the web.
         -------------------------------------------------------------------- '''
 
+        _logger.debug("Creating edi document from web request for partner %s, flow %s, reference %s", partner, flow, reference)
+
         # Find the correct EDI flow
         # -------------------------
         model_db = self.pool.get('ir.model.data')
@@ -531,6 +488,7 @@ class clubit_tools_edi_document_incoming(osv.Model):
         flow_id = model_db.browse(cr, uid, flow_id)[0]
         flow_id = flow_id.res_id
         flow_object = self.pool.get('clubit.tools.edi.flow').browse(cr, uid, flow_id)
+        _logger.debug("Flow found %d (%s)", flow_id, flow_object.name)
 
         # Find the correct partner
         # ------------------------
@@ -538,6 +496,7 @@ class clubit_tools_edi_document_incoming(osv.Model):
         if not partner_id or not partner: return 'Parameter "partner" could not be resolved, request aborted.'
         partner_id = model_db.browse(cr, uid, partner_id)[0]
         partner_id = partner_id.res_id
+        _logger.debug("Partner found %d for name provided (%s)", partner_id, partner)
 
         if not reference: return 'Parameter "reference" cannot be empty, request aborted.'
         if not content:   return 'Parameter "content" cannot be empty, request aborted.'
@@ -555,7 +514,6 @@ class clubit_tools_edi_document_incoming(osv.Model):
         if not flow_object.allow_duplicates:
             doc_id = self.search(cr, uid, [('flow_id', '=', flow_id), ('partner_id', '=', partner_id), ('reference', '=', reference)])
             if doc_id: return 'This reference has already been processed, request aborted.'
-
 
         location = join(_directory_edi_base, cr.dbname, str(partner_id), str(flow_id), 'imported')
 
@@ -589,8 +547,6 @@ class clubit_tools_edi_document_incoming(osv.Model):
 
         return True
 
-
-
     def import_process(self, cr, uid):
         ''' clubit.tools.edi.document.incoming:import_process()
         -------------------------------------------------------
@@ -600,8 +556,7 @@ class clubit_tools_edi_document_incoming(osv.Model):
         to go through the entire EDI workflow process.
         -------------------------------------------------------------------- '''
 
-        log = logging.getLogger(None)
-        log.info('EDI_IMPORT: Starting the EDI document import process.')
+        _logger.debug('EDI_IMPORT: Starting the EDI document import process.')
 
         # Find all active EDI partners
         # ----------------------------
@@ -609,23 +564,23 @@ class clubit_tools_edi_document_incoming(osv.Model):
         partner_db = self.pool.get('res.partner')
         pids = partner_db.search(cr, uid, [('edi_relevant', '=', True)])
         if not pids:
-            log.info('EDI_IMPORT: No active EDI partners at the moment, processing is done.')
+            _logger.debug('EDI_IMPORT: No active EDI partners at the moment, processing is done.')
             return True
-
-
 
         # Loop over each individual partner and scrobble through their active flows
         # -------------------------------------------------------------------------
         partners = partner_db.browse(cr, uid, pids, None)
         for partner in partners:
-
+            _logger.debug("Processing edi relevant partner %d (%s)", partner.id, partner.name)
             root_path = join(_directory_edi_base, cr.dbname, str(partner.id))
             if not path.exists(root_path):
                 raise osv.except_osv(_('Error!'), _('EDI folder missing for partner {!s}'.format(str(partner.id))))
+            
+            if not partner.edi_flows: _logger.debug("No edi flows defined for partner %d", partner.id)
 
             for flow in partner.edi_flows:
                 if flow.partnerflow_active == False or flow.flow_id.direction != 'in': continue
-
+                _logger.debug("Processing active incoming flow %d (%s)", flow.id, flow.flow_id.name)
 
                 # We've found an active flow, let's check for new files
                 # A file is determined as new if it isn't assigned to a
@@ -636,14 +591,15 @@ class clubit_tools_edi_document_incoming(osv.Model):
                     raise osv.except_osv(_('Error!'), _('EDI folder missing for partner {!s}, flow {!s}'.format(flow.flow_id.name)))
 
                 files = [ f for f in listdir(sub_path) if isfile(join(sub_path, f)) ]
-                if not files: continue
-
+                if not files: 
+                    _logger.debug("No files found in directory %s", sub_path)
+                    continue
 
                 # If we get all the way over here, it means we've
                 # actually found some new files :)
                 # -----------------------------------------------
                 for f in files:
-
+                    _logger.debug("File found in directory %s: %s", sub_path, f)
                     # Entering ultra defensive mode: make sure that this
                     # file isn't already converted to an EDI document yet!
                     # Unless this is specifically allowed by the flow
@@ -652,22 +608,20 @@ class clubit_tools_edi_document_incoming(osv.Model):
                         duplicate = self.search(cr, uid, [('partner_id', '=', partner.id),
                                                           ('flow_id', '=', flow.flow_id.id),
                                                           ('name', '=', f)])
-                        if len(duplicate) > 0: continue
-
+                        if len(duplicate) > 0: 
+                            _logger.debug("Duplicate file. Skipping")
+                            continue
 
                     # Actually create a new EDI Document
                     # This also triggers the workflow creation
                     # ----------------------------------------
                     new_doc = self.create_from_file(cr, uid, sub_path, f)
                     if flow.flow_id.process_after_create:
+                        _logger.debug("Trigger workflow ready for edi document %d", new_doc) 
                         wf_service.trg_validate(uid, 'clubit.tools.edi.document.incoming', new_doc, 'button_to_ready', cr)
 
-
-        log.info('EDI_IMPORT: Document import process is done.')
+        _logger.debug('EDI_IMPORT: Document import process is done.')
         return True
-
-
-
 
     def document_process(self, cr, uid):
         ''' clubit.tools.edi.document.incoming:document_process()
@@ -679,11 +633,10 @@ class clubit_tools_edi_document_incoming(osv.Model):
 
         # Find all documents that are ready to be processed
         # -------------------------------------------------
-        log = logging.getLogger(None)
-        log.info('DOCUMENT_PROCESS: Starting the EDI document processor.')
+        _logger.debug('DOCUMENT_PROCESS: Starting the EDI document processor.')
         documents = self.search(cr, uid, [('state', '=', 'ready')])
         if not documents:
-            log.info('DOCUMENT_PROCESS: No documents found, processing is done.')
+            _logger.debug('DOCUMENT_PROCESS: No documents found, processing is done.')
             return True
 
         # Mark all of these documents as in 'processing' to make sure they don't
@@ -692,15 +645,11 @@ class clubit_tools_edi_document_incoming(osv.Model):
         # ----------------------------------------------------------------------
         wf_service = netsvc.LocalService("workflow")
         for document in documents:
+            _logger.debug("Trigger workflow processing for edi document %d", document)
             wf_service.trg_validate(uid, 'clubit.tools.edi.document.incoming', document, 'document_processor_pickup', cr)
 
-        log.info('DOCUMENT_PROCESS: EDI document processor is done.')
+        _logger.debug('DOCUMENT_PROCESS: EDI document processor is done.')
         return True
-
-
-
-
-
 
 
     def valid(self, cr, uid, ids, *args):
@@ -714,7 +663,6 @@ class clubit_tools_edi_document_incoming(osv.Model):
         assert len(ids) == 1
         document = self.browse(cr, uid, ids[0], None)
 
-
         # Perform a basic validation, depending on the filetype
         # -----------------------------------------------------
         filetype = document.name.split('.')[-1]
@@ -726,7 +674,6 @@ class clubit_tools_edi_document_incoming(osv.Model):
                 self.message_post(cr, uid, document.id, body='Error found: content is not valid CSV.')
                 return False
 
-
         elif filetype == 'json':
             try:
                 data = json.loads(document.content)
@@ -737,23 +684,18 @@ class clubit_tools_edi_document_incoming(osv.Model):
                 self.message_post(cr, uid, document.id, body='Error found: content is not valid JSON.')
                 return False
 
-
         # Perform custom validation
         # -------------------------
         if not document.flow_id.validator:
             return True
 
         validator = getattr(self.pool.get(document.flow_id.model), document.flow_id.validator)
+        _logger.debug("Perform custom validator '%s.%s' for flow %d (%s)", document.flow_id.model, document.flow_id.validator, document.flow_id.id, document.flow_id.name)
         try:
             return validator(cr, uid, document.id, None)
         except Exception as e:
             self.message_post(cr, uid, document.id, body='Error occurred during validation, most likely due to a program error:{!s}'.format(str(e)))
-            #self.message_post(cr, uid, document.id, body='Error occurred during validation, most likely due to a program error')
             return False
-
-
-
-
 
     def action_new(self, cr, uid, ids):
         ''' clubit.tools.edi.document.incoming:action_new()
@@ -768,8 +710,6 @@ class clubit_tools_edi_document_incoming(osv.Model):
         self.write(cr, uid, ids, { 'state' : 'new' })
         return True
 
-
-
     def action_in_error(self, cr, uid, ids):
         ''' clubit.tools.edi.document.incoming:action_in_error()
         --------------------------------------------------------
@@ -781,8 +721,6 @@ class clubit_tools_edi_document_incoming(osv.Model):
         assert len(ids) == 1
         self.write(cr, uid, ids, { 'state' : 'in_error', 'processed' : False })
         return True
-
-
 
     def action_ready(self, cr, uid, ids):
         ''' clubit.tools.edi.document.incoming:action_ready()
@@ -798,8 +736,6 @@ class clubit_tools_edi_document_incoming(osv.Model):
         self.write(cr, uid, ids, { 'state' : 'ready' })
         return True
 
-
-
     def action_processing(self, cr, uid, ids):
         ''' clubit.tools.edi.document.incoming:action_processing()
         ----------------------------------------------------------
@@ -810,8 +746,6 @@ class clubit_tools_edi_document_incoming(osv.Model):
         assert len(ids) == 1
         self.write(cr, uid, ids, { 'state' : 'processing' })
         return True
-
-
 
     def action_processed(self, cr, uid, ids):
         ''' clubit.tools.edi.document.incoming:action_processed()
@@ -839,10 +773,6 @@ class clubit_tools_edi_document_incoming(osv.Model):
 
         return True
 
-
-
-
-
     def action_archive(self, cr, uid, ids):
         ''' clubit.tools.edi.document.incoming:action_archive()
         -------------------------------------------------------
@@ -855,17 +785,6 @@ class clubit_tools_edi_document_incoming(osv.Model):
         self.move(cr, uid, ids[0], 'archived', None)
         self.message_post(cr, uid, ids[0], body='EDI Document successfully archived.')
         return True
-
-
-
-
-
-
-
-
-
-
-
 
 ##############################################################################
 #
@@ -892,7 +811,6 @@ class clubit_tools_edi_document_outgoing(osv.Model):
         for each currently actively listening partner.
         ------------------------------------------------------- '''
 
-
         # Resolve the method to an EDI flow
         # ---------------------------------
         flow_db = self.pool.get('clubit.tools.edi.flow')
@@ -900,7 +818,6 @@ class clubit_tools_edi_document_outgoing(osv.Model):
         if not flow:
             return self._flow_not_found
         flow = flow_db.browse(cr, uid, flow, None)
-
 
         # Make sure the provided content is valid
         # ---------------------------------------
@@ -910,7 +827,6 @@ class clubit_tools_edi_document_outgoing(osv.Model):
                 if not data: return self._content_invalid
             except Exception:
                 return self._content_invalid
-
 
         # Start preparing the document
         # ----------------------------
@@ -956,9 +872,6 @@ class clubit_tools_edi_document_outgoing(osv.Model):
 
         return True
 
-
-
-
     ''' clubit.tools.edi.document.outgoing:action_new()
         -----------------------------------------------
         This method is called when the object is created by the
@@ -984,33 +897,4 @@ class clubit_tools_edi_document_outgoing(osv.Model):
     #    self.move(cr, uid, ids[0], 'archived', None)
     #    self.message_post(cr, uid, ids[0], body='EDI Document successfully archived.')
     #    return True
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

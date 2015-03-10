@@ -120,6 +120,26 @@
                 </tree>
             </field>
         </record>
+        <record id="view_clubit_tools_flow_form" model="ir.ui.view">
+            <field name="name">view.clubit.tools.edi.flow.form</field>
+            <field name="model">clubit.tools.edi.flow</field>
+            <field name="arch" type="xml">
+                <form string="EDI Flow" version="7.0">
+                    <group name="Flow Settings">
+                        <field name="name"/>
+                	    <field name="process_after_create"/>
+                	    <field name="allow_duplicates"/>
+                        <field name="direction"/>
+                        <field name="validator"/>
+                        <field name="model"/>
+                        <field name="partner_resolver"/>
+                        <field name="method"/>
+                    </group>
+                    <separator string="Ignore Partners"/>
+                    <field name="ignore_partner_ids"/>
+                </form>
+            </field>
+        </record>
         <!-- Next up are all the views related to the EDI documents. The way this
 			is set up is as following. The menu item links to the action, the action
 			links to a search_view, which is the dropdown when you expand the search
