@@ -185,6 +185,8 @@
                 <search string="Search EDI Documents">
                     <field filter_domain="[('name','ilike',self)]"
                         name="name" string="Document Name"/>
+                    <field name="flow_id"/>
+                    <field name="partner_id"/>
                     <separator/>
                     <filter domain="[('state','=','new')]"
                         name="edi_filter_state_new" string="New"/>
@@ -219,8 +221,10 @@
             <field name="model">clubit.tools.edi.document.outgoing</field>
             <field name="arch" type="xml">
                 <search string="Search EDI Documents">
-                    <field filter_domain="[('name','ilike',self)]"
+                    <field filter_domain="[('name', 'ilike', self)]"
                         name="name" string="Document Name"/>
+                    <field name="flow_id"/>
+                    <field name="partner_id"/>
                     <separator/>
                     <group expand="0" string="Group By...">
                         <filter context="{'group_by':'partner_id'}"
@@ -239,7 +243,7 @@
             <field name="view_type">form</field>
             <field name="view_mode">tree,form</field>
             <field name="search_view_id" ref="view_clubit_tools_edi_document_incoming_filter"/>
-            <field name="context">{'search_default_edi_filter_state_not_archived':True, 'search_default_edi_group_by_state':True, 'search_default_edi_group_by_flow':True}</field>
+            <field name="context">{'search_default_edi_filter_state_not_archived':True}</field>
             <field name="domain">[]</field>
         </record>
         <record id="action_edi_documents_outgoing" model="ir.actions.act_window">

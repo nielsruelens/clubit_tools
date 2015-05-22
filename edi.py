@@ -457,6 +457,7 @@ class clubit_tools_edi_document_incoming(osv.osv):
     _name = "clubit.tools.edi.document.incoming"
     _inherit = ['clubit.tools.edi.document']
     _description = "Incoming EDI Document"
+    _order = "create_date desc"
 
     _columns = {
         'processed': fields.boolean('Processed', readonly=True),
@@ -846,6 +847,7 @@ class clubit_tools_edi_document_outgoing(osv.Model):
     _name = "clubit.tools.edi.document.outgoing"
     _inherit = ['clubit.tools.edi.document']
     _description = "Outgoing EDI Document"
+    _order = "create_date desc"
 
     _flow_not_found        = 'flow_not_found'
     _content_invalid       = 'content_invalid'
