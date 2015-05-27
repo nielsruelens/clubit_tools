@@ -923,6 +923,24 @@ class clubit_tools_edi_document_outgoing(osv.Model):
 
         return True
 
+    def document_manual_process(self, cr, uid, ids, context=None):
+        '''Button action to manually process outgoing document'''
+        document = self.browse(cr, uid, ids[0], None)
+        processor = getattr(self.pool.get(document.flow_id.model), document.flow_id.method)
+        result = False
+        try:
+            processor(cr, uid, document.id, None)
+        except Exception as e:
+            self.message_post(cr, uid, document.id, body='Error occurred during processing, error given: {!s}'.format(str(e)))
+            self.write(cr, uid, ids, { 'state' : 'in_error' })
+        if result:
+            self.message_post(cr, uid, document.id, body='EDI Document successfully processed.')
+            self.write(cr, uid, ids, { 'state' : 'processed', 'processed' : True })
+        else:
+            self.message_post(cr, uid, document.id, body='Error occurred during processing, the action was not completed.')
+            self.write(cr, uid, ids, { 'state' : 'in_error' })
+        return result
+
     ''' clubit.tools.edi.document.outgoing:action_new()
         -----------------------------------------------
         This method is called when the object is created by the

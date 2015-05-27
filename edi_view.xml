@@ -183,7 +183,7 @@
             <field name="model">clubit.tools.edi.document.incoming</field>
             <field name="arch" type="xml">
                 <search string="Search EDI Documents">
-                    <field filter_domain="[('name','ilike',self)]"
+                    <field filter_domain="[('name', 'ilike', self)]"
                         name="name" string="Document Name"/>
                     <field name="flow_id"/>
                     <field name="partner_id"/>
@@ -364,10 +364,15 @@
             <field name="arch" type="xml">
                 <form create="false" duplicate="false" edit="false"
                     string="Outgoing Document" version="7.0">
+                    <header>
+                        <button name="document_manual_process" type="object" 
+                            states="new,in_error" string="Process" class="oe_highlight"/>
+                    </header>
                     <sheet>
                         <h1>
                             <field class="oe_inline" name="name" readonly="1"/>
                         </h1>
+                        
                         <group>
                             <group>
                                 <field name="partner_id" readonly="1"/>
