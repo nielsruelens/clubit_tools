@@ -421,7 +421,8 @@ class clubit_tools_edi_document(osv.Model):
           'name': name,
           'location': location,
           'state': 'new',
-          'reference': None
+          'reference': None,
+          'processed': False
         })
         res = super(clubit_tools_edi_document, self).copy(cr, uid, id, default, context)
         return res
