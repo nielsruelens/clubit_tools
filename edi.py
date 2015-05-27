@@ -929,10 +929,11 @@ class clubit_tools_edi_document_outgoing(osv.Model):
         processor = getattr(self.pool.get(document.flow_id.model), document.flow_id.method)
         result = False
         try:
-            processor(cr, uid, document.id, None)
+            result = processor(cr, uid, document.id, None)
         except Exception as e:
             self.message_post(cr, uid, document.id, body='Error occurred during processing, error given: {!s}'.format(str(e)))
             self.write(cr, uid, ids, { 'state' : 'in_error' })
+        # the implementation can write messages in the document giving more info
         if result:
             self.message_post(cr, uid, document.id, body='EDI Document successfully processed.')
             self.write(cr, uid, ids, { 'state' : 'processed', 'processed' : True })
